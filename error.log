@@ -1,0 +1,5 @@
+[Sun Sep 04 03:14:01.599991 2022] [lbmethod_heartbeat:notice] [pid 1005] AH02282: No slotmem from mod_heartmonitor
+[Sun Sep 04 03:14:01.649730 2022] [mpm_prefork:notice] [pid 1005] AH00163: Apache/2.4.6 (CentOS) PHP/7.2.34 configured -- resuming normal operations
+[Sun Sep 04 03:14:01.649776 2022] [core:notice] [pid 1005] AH00094: Command line: '/usr/sbin/httpd -D FOREGROUND'
+[Sun Sep 11 03:27:01.998374 2022] [mpm_prefork:notice] [pid 1005] AH00171: Graceful restart requested, doing restart
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using localhost.localdomain. Set the 'ServerName' directive globally to suppress this message
