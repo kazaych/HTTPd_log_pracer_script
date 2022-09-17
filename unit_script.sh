@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Delete all temp files in case of unexpected stop the script
+# Section 1. Delete all temp files in case of unexpected stop the script
 
 function clean {
         echo "Deleting temp files"
@@ -10,7 +10,7 @@ function clean {
 
 trap clean 1 2 3 6 15
 
-# Prevent dublicate start
+# Section 2. Prevent duplicate start
 
 if [ -e "/var/lock/unit_script.lock" ]; then
     echo "Another instance of the script is running. Aborting."
@@ -20,34 +20,34 @@ else
 fi
 
 
-# Test file exist and log last launch script create
+# Section 3. Test file exist and log last launch script create
 
 if test -r last_launch.log; then
+	echo Script was previosly run at `cat last_launch.log | sed s'/\[//'`
 
-	date +"[%d/%b/%Y:%H:%M" > last_launch.log
 else
 	echo [14/Aug/2019:00:00:00 > last_launch.log
 fi
 
 LOG=$1
 
-# Parse time range between time in last_launch.log and current time, write range of strings in time range to tmp.log file
+# Section 4. Parse time range between time in last_launch.log and current time, write range of strings in time range to tmp.log file
 function valid_time {
 	touch tmp.log
 	awk -vSTART_Date=`cat last_launch.log` -vEND_Date=`date -d'now' +[%d/%b/%Y:%H:%M:%S` '$4 > START_Date && $4 < END_Date {print $0}' $1 > tmp.log
 }
 
-# Parse 3 ip addresses from access.log after cut range of time with valid_time
+# Section 5. Parse 3 ip addresses from access.log after cut range of time with valid_time
 function best_ip {
 	cat tmp.log | cut -f 1 -d '-' | sort | uniq -c | sort -n | tail -n 3 | awk '{print $2,"-",$1}'
 }
 
-# Parse 3 best http  from access.log after cut range of time with valid_time
+# Section 6. Parse 3 best http  from access.log after cut range of time with valid_time
 function best_http {
 	cat tmp.log | awk '/GET/ {print $15}' | grep http | cut -f 1 -d ')' | sort | sed 's/+//' | uniq -c | sort -n | awk '{print $2,"-",$1}' | tail -n 3
 }
 
-# Parse HTTP Code
+# Section 7. Parse HTTP Code
 
 function http_codes {
 	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n
@@ -57,39 +57,41 @@ function http_bad_codes {
 	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n | awk -vCOD=399 '$1 > COD {print $0}'
 }
 
-# Start valid_time function
+# Section 8. Start valid_time function
 
 valid_time $LOG
 
-# Output
+# Section 9. Output
 
 if [ ! -s tmp.log ]
 then
-cat <<-EOF > result.log 
+cat <<-EOF > result.log
 	--------------------------------------------------------------
 	 This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
 	--------------------------------------------------------------
 	There is nothing to change
 EOF
 else
-cat <<-EOF > result.log  
+cat <<-EOF > result.log
 	--------------------------------------------------------------
 	This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
 	--------------------------------------------------------------
-	'----- MAXIUMUM IP COUNT -----'
+	------ MAXIUMUM IP COUNT ------
 	$(best_ip)
-	'----- MAXIMUM WWW COUNT -----'
+	------ MAXIMUM WWW COUNT ------
 	$(best_http)
-	'----- HTTP CODE COUNT -------'
+	------ HTTP CODE COUNT --------
 	$(http_codes)
-	'----- HTTP ERRORS COUNT -----'
+	------ HTTP ERRORS COUNT ------
 	$(http_bad_codes)
 EOF
 	rm -f tmp.log
 fi
 
-# Delete environment
+# Section 10. Delete environment and write last run time
 rm -f /var/lock/unit_script.lock
+date +"[%d/%b/%Y:%H:%M:%S" > last_launch.log
 
-# Create and send email
-mail -a ./result.log -s "Log file from httpd" kazay@mail.ru < /dev/null
+# Section 11. Create and send email
+
+mail -a result.log -s "Log file from httpd" kazay@mail.ru < /dev/null
