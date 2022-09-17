@@ -31,7 +31,6 @@ fi
 
 LOG=$1
 
-
 # Parse time range between time in last_launch.log and current time, write range of strings in time range to tmp.log file
 function valid_time {
 	touch tmp.log
@@ -51,11 +50,11 @@ function best_http {
 # Parse HTTP Code
 
 function http_codes {
-	cat access.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n	
+	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n
 }
 
 function http_bad_codes {
-	cat access.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n | awk -vCOD=399 '$1 > COD {print $0}'
+	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n | awk -vCOD=399 '$1 > COD {print $0}'
 }
 
 # Start valid_time function
@@ -68,7 +67,7 @@ if [ ! -s tmp.log ]
 then
 cat <<-EOF > result.log 
 	--------------------------------------------------------------
-	 This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`	
+	 This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
 	--------------------------------------------------------------
 	There is nothing to change
 EOF
@@ -92,6 +91,5 @@ fi
 # Delete environment
 rm -f /var/lock/unit_script.lock
 
-# Create and send email 
-
+# Create and send email
 mail -a ./result.log -s "Log file from httpd" kazay@mail.ru < /dev/null
