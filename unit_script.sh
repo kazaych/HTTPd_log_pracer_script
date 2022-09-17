@@ -23,7 +23,7 @@ fi
 # Section 3. Test file exist and log last launch script create
 
 if test -r last_launch.log; then
-	echo Script was previosly run at `cat last_launch.log | sed s'/\[//'`
+	echo Script was previously run at `cat last_launch.log | sed s'/\[//'`
 
 else
 	echo [14/Aug/2019:00:00:00 > last_launch.log
@@ -34,7 +34,7 @@ LOG=$1
 # Section 4. Parse time range between time in last_launch.log and current time, write range of strings in time range to tmp.log file
 function valid_time {
 	touch tmp.log
-	awk -vSTART_Date=`cat last_launch.log` -vEND_Date=`date -d'now' +[%d/%b/%Y:%H:%M:%S` '$4 > START_Date && $4 < END_Date {print $0}' $1 > tmp.log
+	awk -vSTART_Date=`cat last_launch.log` -vEND_Date=`date -d 'now' +[%d/%b/%Y:%H:%M:%S` '$4 > START_Date && $4 < END_Date {print $0}' $1 > tmp.log
 }
 
 # Section 5. Parse 3 ip addresses from access.log after cut range of time with valid_time
@@ -48,20 +48,20 @@ function best_http {
 }
 
 # Section 7. Parse HTTP Code
-
 function http_codes {
 	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n
 }
 
+# Section 8. Parse HTTP errors codes
 function http_bad_codes {
 	cat tmp.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n | awk -vCOD=399 '$1 > COD {print $0}'
 }
 
-# Section 8. Start valid_time function
+# Section 9. Start valid_time function
 
 valid_time $LOG
 
-# Section 9. Output
+# Section 10. Output
 
 if [ ! -s tmp.log ]
 then
@@ -88,10 +88,9 @@ EOF
 	rm -f tmp.log
 fi
 
-# Section 10. Delete environment and write last run time
+# Section 11. Delete environment and write last run time
 rm -f /var/lock/unit_script.lock
 date +"[%d/%b/%Y:%H:%M:%S" > last_launch.log
 
-# Section 11. Create and send email
-
+# Section 12. Create and send email
 mail -a result.log -s "Log file from httpd" kazay@mail.ru < /dev/null
