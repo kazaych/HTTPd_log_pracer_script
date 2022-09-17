@@ -1,5 +1,15 @@
 #!/bin/bash
 
+#Delete all temp files in case of unexpected stop the script
+
+function clean {
+        echo "Deleting temp files"
+        rm -f tmp.log && rm -f /var/lock/unit_script.lock && rm -f last_launch.log
+        echo "Success"
+}
+
+trap clean 1 2 3 6 15
+
 # Prevent dublicate start
 
 if [ -e "/var/lock/unit_script.lock" ]; then
@@ -47,41 +57,41 @@ function http_codes {
 function http_bad_codes {
 	cat access.log | grep GET | awk '{print $9}' | sort | uniq -c | awk '{print $2"-"$1}' | sort -n | awk -vCOD=399 '$1 > COD {print $0}'
 }
+
 # Start valid_time function
 
 valid_time $LOG
 
 # Output
 
-if [ ! -s tmp.log ]; then
-	echo --------------------------------------------------------------
-	echo This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
-	echo --------------------------------------------------------------
-	echo There is nothing to change
-else 
-	echo --------------------------------------------------------------
-        echo This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
-        echo --------------------------------------------------------------	
-	echo '----- MAXIUMUM IP COUNT -----'
-	best_ip
-	echo '----- MAXIMUM WWW COUNT -----'
-	best_http
-	echo '----- HTTP CODE COUNT -------'
-	http_codes
-	echo '----- HTTP ERRORS COUNT -----'
-	https_bad_codes
+if [ ! -s tmp.log ]
+then
+cat <<-EOF > result.log 
+	--------------------------------------------------------------
+	 This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`	
+	--------------------------------------------------------------
+	There is nothing to change
+EOF
+else
+cat <<-EOF > result.log  
+	--------------------------------------------------------------
+	This log create from `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`
+	--------------------------------------------------------------
+	'----- MAXIUMUM IP COUNT -----'
+	$(best_ip)
+	'----- MAXIMUM WWW COUNT -----'
+	$(best_http)
+	'----- HTTP CODE COUNT -------'
+	$(http_codes)
+	'----- HTTP ERRORS COUNT -----'
+	$(http_bad_codes)
+EOF
 	rm -f tmp.log
 fi
 
 # Delete environment
 rm -f /var/lock/unit_script.lock
 
-# Create and sen email 
+# Create and send email 
 
-touch "result.log"
-cmd >> ./result.log  2>&1
-
-mail -a ./result.log -s "log file from httpd `cat last_launch.log | sed 's/\[//'` to `date -d'now' +%d/%b/%Y:%H:%M:%S`" kazay@mail.ru < /dev/null 
-
-
-
+mail -a ./result.log -s "Log file from httpd" kazay@mail.ru < /dev/null
